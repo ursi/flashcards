@@ -1,0 +1,4 @@
+node_modules
+.cache
+elm-stuff
+dist

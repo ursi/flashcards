@@ -1,0 +1,14 @@
+{
+  "scripts": {
+    "start": "parcel index.html"
+  },
+  "dependencies": {
+    "@ursi/jim": "^0.2.1",
+    "@ursi/support": "github:ursi/support-js#5e156fe248de0f2fcf7a7a6940271ac19435fd9c"
+  },
+  "devDependencies": {
+    "elm-hot": "^1.1.5",
+    "node-elm-compiler": "^5.0.4",
+    "parcel-bundler": "^1.12.4"
+  }
+}
