@@ -399,16 +399,14 @@ update msg model =
                         (Card.new model.side1 model.side2)
                         model.cards
             in
-            ( { model
-                | cards = cards
-                , side1 = ""
-                , side2 = ""
-              }
-            , Cmd.batch
-                [ Card.write cards
-                , Task.attempt (\_ -> NoOp) <| Dom.focus side1Id
-                ]
-            )
+            tell (Card.write cards)
+                |> dell (focus side1Id)
+                |> dure
+                    { model
+                        | cards = cards
+                        , side1 = ""
+                        , side2 = ""
+                    }
 
         UpdateSide2 str ->
             pure { model | side2 = str }
@@ -418,6 +416,16 @@ update msg model =
 
         NoOp ->
             ( model, Cmd.none )
+
+
+focus : String -> Cmd Msg
+focus id =
+    Task.attempt (always NoOp) <| Dom.focus id
+
+
+blur : String -> Cmd Msg
+blur id =
+    Task.attempt (always NoOp) <| Dom.blur id
 
 
 format : String -> String
