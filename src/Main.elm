@@ -415,7 +415,7 @@ update msg model =
             pure { model | side1 = format str }
 
         NoOp ->
-            ( model, Cmd.none )
+            pure model
 
 
 focus : String -> Cmd Msg
