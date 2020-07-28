@@ -255,6 +255,8 @@ update msg model =
                                     , hotkeyMode = False
                                 }
                         in
+                        tell (focus testInputId)
+                            |> dind
                                 (case testingState.left of
                                     head :: tail ->
                                         let
