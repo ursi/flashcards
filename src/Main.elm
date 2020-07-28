@@ -171,7 +171,9 @@ update msg model =
             pure { model | testingInput = format str }
 
         Export ->
-            ( model, Download.string "flashcards.json" "application.json" <| En.encode 4 <| En.array Card.encode model.cards )
+            ( model
+            , Download.string "flashcards.json" "application.json" <| En.encode 4 <| En.array Card.encode model.cards
+            )
 
         Repractice i ->
             updateCards
