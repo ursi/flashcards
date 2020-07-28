@@ -50,7 +50,7 @@ nextState ({ completed, state } as card) =
             { card | state = Side1 <| completed + 1 }
 
         Completed ->
-            card
+            { card | state = Pending }
 
 
 encode : Card -> Value
