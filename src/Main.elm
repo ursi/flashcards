@@ -138,6 +138,7 @@ type Msg
     | PassPractice
     | FailPractice
     | ShowBothSidesPractice
+    | Repractice Int
     | NoOp
 
 
@@ -149,6 +150,21 @@ type PassFail
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        Repractice i ->
+            updateCards
+                (\cards ->
+                    Array.get i cards
+                        |> Maybe.map Card.nextState
+                        |> Maybe.map
+                            (\c ->
+                                cards
+                                    |> Array.removeAt i
+                                    |> Array.push c
+                            )
+                        |> Maybe.withDefault cards
+                )
+                model
+
         ShowBothSidesPractice ->
             ( { model
                 | practiceState =
@@ -751,13 +767,16 @@ cardListHtml model =
                         , H.div [] [ H.text side2 ]
                         , H.button [ E.onClick <| StartEditing i side1 side2 ] [ H.text "Edit" ]
                         , H.button [ E.onDoubleClick <| RemoveCard i ] [ H.text "Remove" ]
+                        , F.maybe idH
+                            (\_ -> H.button [ E.onClick <| Repractice i ] [ H.text "Practice" ])
+                            (F.bool <| card.state == TS.Completed)
                         ]
                 )
         )
         >> H.divS
             [ C.display "grid"
             , C.columnGap "1em"
-            , C.gridTemplateColumns "1fr 1fr max-content max-content"
+            , C.gridTemplateColumns "1fr 1fr repeat(3, max-content)"
             , C.textAlign "center"
             , tableBorder "black" "white" 2
             , C.whiteSpace "pre-wrap"
