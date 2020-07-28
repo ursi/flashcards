@@ -7,11 +7,13 @@ import Browser.Dom as Dom
 import Card exposing (Card)
 import Css as C exposing (Declaration)
 import Css.Global as CG
+import File.Download as Download
 import FoldIdentity as F
 import Html.Attributes as A
 import Html.Events as E
 import Html.Styled as H exposing (Attribute, Html)
 import Json.Decode as D exposing (Value)
+import Json.Encode as En
 import Ports
 import PracticeQueue exposing (PracticeQueue)
 import Random
@@ -139,6 +141,7 @@ type Msg
     | FailPractice
     | ShowBothSidesPractice
     | Repractice Int
+    | Export
     | NoOp
 
 
@@ -150,6 +153,9 @@ type PassFail
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        Export ->
+            ( model, Download.string "flashcards.json" "application.json" <| En.encode 4 <| En.array Card.encode model.cards )
+
         Repractice i ->
             updateCards
                 (\cards ->
@@ -505,6 +511,13 @@ header model =
         [ H.div [ E.onClick <| SetTab Test ] [ H.text "Test" ]
         , H.div [ E.onClick <| SetTab Practice ] [ H.text "Practice" ]
         , H.div [ E.onClick <| SetTab Cards ] [ H.text "Cards" ]
+        , H.buttonS
+            [ C.position "absolute"
+            , C.top ".5em"
+            , C.right ".5em"
+            ]
+            [ E.onClick Export ]
+            [ H.text "Export" ]
         ]
 
 
