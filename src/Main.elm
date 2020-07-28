@@ -657,6 +657,12 @@ cardsHtml { pass, fail, show } alwaysShowing maybeShowing =
                     Nothing ->
                         [ H.button [ E.onClick show ] [ H.text "Show" ] ]
             ]
+        , H.divS
+            [ C.textAlign "center"
+            , C.marginTop "1em"
+            ]
+            []
+            [ cardInput [] [] ]
         ]
 
 
