@@ -707,7 +707,12 @@ cardsHtml { pass, fail, show, showing, maybeShowing, testing } =
                         ]
 
                     Nothing ->
-                        [ H.button [ E.onClick show ] [ H.text "Show" ] ]
+                        [ H.button
+                            [ A.id showId
+                            , E.onClick show
+                            ]
+                            [ H.text "Show" ]
+                        ]
             ]
         , H.divS
             [ C.textAlign "center"
@@ -715,13 +720,40 @@ cardsHtml { pass, fail, show, showing, maybeShowing, testing } =
             ]
             []
             [ cardInput
-                [ A.value testing
+                [ A.id testInputId
+                , A.value testing
                 , A.attribute "spellcheck" "false"
                 , E.onInput UpdateTestingInput
+                , E.preventDefaultOn "keydown" <|
+                    D.map
+                        (\key ->
+                            if key == "Tab" then
+                                ( Run <|
+                                    Cmd.batch
+                                        [ blur testInputId
+                                        , click showId
+                                        ]
+                                , True
+                                )
+
+                            else
+                                ( NoOp, False )
+                        )
+                        (D.field "key" D.string)
                 ]
                 []
             ]
         ]
+
+
+showId : String
+showId =
+    "show"
+
+
+testInputId : String
+testInputId =
+    "test-input"
 
 
 preTestingControls : Model -> Html Msg
