@@ -11,6 +11,12 @@ const app = Elm.Main.init({
 const port = SupPort(app.ports);
 
 port(`ports`, {
+	Click(id) {
+		console.log(id);
+		const button = document.getElementById(id);
+		if (button) button.click();
+	},
+
 	WriteMax(max) {
 		localStorage.max = max;
 	},

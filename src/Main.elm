@@ -14,7 +14,7 @@ import Html.Events as E
 import Html.Styled as H exposing (Attribute, Html)
 import Json.Decode as D exposing (Value)
 import Json.Encode as En
-import Ports
+import Ports exposing (click)
 import PracticeQueue exposing (PracticeQueue)
 import Random
 import Random.List
