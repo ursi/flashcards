@@ -611,6 +611,7 @@ cardsHtml { pass, fail, show } alwaysShowing maybeShowing =
             , C.grid "auto/auto-flow 1fr"
             , C.marginTop "3em"
             , C.textAlign "center"
+            , C.whiteSpace "pre-wrap"
             ]
             []
             [ H.div [] [ H.text alwaysShowing ]
