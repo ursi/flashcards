@@ -20,6 +20,7 @@ import Random
 import Random.List
 import Task
 import Type.TestingState as TS exposing (TestingState)
+import Writer exposing (..)
 
 
 todo =
@@ -90,27 +91,26 @@ type CardsTab
 
 init : Value -> ( Model, Cmd Msg )
 init flags =
-    ( { cards =
+    pure
+        { cards =
             D.decodeValue
                 (D.field "cards" <| D.array Card.decoder)
                 flags
                 |> Result.withDefault Array.empty
-      , side1 = ""
-      , side2 = ""
-      , tab = Cards
-      , cardsTab = Pending
-      , addingCard = False
-      , editing = Nothing
-      , editingSide1 = ""
-      , editingSide2 = ""
-      , max =
+        , side1 = ""
+        , side2 = ""
+        , tab = Cards
+        , cardsTab = Pending
+        , addingCard = False
+        , editing = Nothing
+        , editingSide1 = ""
+        , editingSide2 = ""
+        , max =
             D.decodeValue (D.map Just <| D.field "max" D.int) flags
                 |> Result.withDefault Nothing
-      , testingState = Nothing
-      , practiceState = Nothing
-      }
-    , Cmd.none
-    )
+        , testingState = Nothing
+        , practiceState = Nothing
+        }
 
 
 
@@ -172,13 +172,12 @@ update msg model =
                 model
 
         ShowBothSidesPractice ->
-            ( { model
-                | practiceState =
-                    model.practiceState
-                        |> Maybe.map (\p -> { p | showing = True })
-              }
-            , Cmd.none
-            )
+            pure
+                { model
+                    | practiceState =
+                        model.practiceState
+                            |> Maybe.map (\p -> { p | showing = True })
+                }
 
         FailPractice ->
             updatePracticeQueue PracticeQueue.fail model
@@ -187,41 +186,42 @@ update msg model =
             updatePracticeQueue PracticeQueue.pass model
 
         ShuffledPracticeCardsReceived cards ->
-            ( { model
-                | practiceState =
-                    PracticeQueue.fromList cards
-                        |> Maybe.map (PracticeState >> (|>) False)
-              }
-            , Cmd.none
-            )
+            pure
+                { model
+                    | practiceState =
+                        PracticeQueue.fromList cards
+                            |> Maybe.map (PracticeState >> (|>) False)
+                }
 
         StartPractice ->
-            ( model
-            , model.cards
-                |> Array.toList
-                |> List.filter
-                    (\{ state } ->
-                        case state of
-                            TS.Side1 _ ->
-                                True
+            tell
+                (model.cards
+                    |> Array.toList
+                    |> List.filter
+                        (\{ state } ->
+                            case state of
+                                TS.Side1 _ ->
+                                    True
 
-                            TS.Side2 _ ->
-                                True
+                                TS.Side2 _ ->
+                                    True
 
-                            _ ->
-                                False
-                    )
-                |> Random.List.shuffle
-                |> Random.generate ShuffledPracticeCardsReceived
-            )
+                                _ ->
+                                    False
+                        )
+                    |> Random.List.shuffle
+                    |> Random.generate ShuffledPracticeCardsReceived
+                )
+                |> dure model
 
         ShowBothSidesTesting ->
             model
                 |> ifTS
-                    (\testingState ->
-                        ( { model | testingState = Just { testingState | showing = True } }
-                        , Cmd.none
-                        )
+                    (\ts ->
+                        pure
+                            { model
+                                | testingState = Just { ts | showing = True }
+                            }
                     )
 
         PassFailTesting passFail ->
@@ -287,23 +287,22 @@ update msg model =
                     else
                         ( Side2, side2 )
             in
-            ( { model
-                | testingState =
-                    if List.isEmpty side1 && List.isEmpty side2 then
-                        Nothing
+            pure
+                { model
+                    | testingState =
+                        if List.isEmpty side1 && List.isEmpty side2 then
+                            Nothing
 
-                    else
-                        Just
-                            { side1 = side1
-                            , side2 = side2
-                            , left = left
-                            , passed = []
-                            , side = side
-                            , showing = False
-                            }
-              }
-            , Cmd.none
-            )
+                        else
+                            Just
+                                { side1 = side1
+                                , side2 = side2
+                                , left = left
+                                , passed = []
+                                , side = side
+                                , showing = False
+                                }
+                }
 
         StartTesting ->
             let
@@ -326,12 +325,13 @@ update msg model =
                             )
                             ( [], [] )
             in
-            ( model
-            , Random.generate ShuffledTestingCardsReceived <|
-                Random.map2 Tuple.pair
-                    (Random.List.shuffle side1)
-                    (Random.List.shuffle side2)
-            )
+            tell
+                (Random.generate ShuffledTestingCardsReceived <|
+                    Random.map2 Tuple.pair
+                        (Random.List.shuffle side1)
+                        (Random.List.shuffle side2)
+                )
+                |> dure model
 
         FillTesting ->
             case model.max of
@@ -339,62 +339,58 @@ update msg model =
                     updateCards (Card.fill max) model
 
                 Nothing ->
-                    ( model, Cmd.none )
+                    pure model
 
         UpdateMax mi ->
-            ( { model | max = mi }
-            , case mi of
+            (case mi of
                 Just i ->
-                    Ports.writeMax i
+                    tell <| Ports.writeMax i
 
                 Nothing ->
-                    Cmd.none
+                    pure ()
             )
+                |> dure { model | max = mi }
 
         RemoveCard i ->
             updateCards (Array.removeAt i) model
 
         UpdateEditingSide2 str ->
-            ( { model | editingSide2 = str }, Cmd.none )
+            pure { model | editingSide2 = str }
 
         UpdateEditingSide1 str ->
-            ( { model | editingSide1 = format str }, Cmd.none )
+            pure { model | editingSide1 = format str }
 
         StopEditing ->
             case model.editing of
                 Just i ->
-                    let
-                        ( partialModel, cmd ) =
-                            model
-                                |> updateCards
-                                    (Card.updateSides
-                                        i
-                                        model.editingSide1
-                                        model.editingSide2
-                                    )
-                    in
-                    ( { partialModel | editing = Nothing }, cmd )
+                    updateCards
+                        (Card.updateSides
+                            i
+                            model.editingSide1
+                            model.editingSide2
+                        )
+                        model
+                        |> map (\m -> { m | editing = Nothing })
 
                 Nothing ->
-                    ( model, Cmd.none )
+                    pure model
 
         StartEditing i side1 side2 ->
-            ( { model
-                | editing = Just i
-                , editingSide1 = side1
-                , editingSide2 = side2
-              }
-            , Cmd.none
-            )
+            pure
+                { model
+                    | editing = Just i
+                    , editingSide1 = side1
+                    , editingSide2 = side2
+                }
 
         SetAddingCard b ->
-            ( { model | addingCard = b }, Cmd.none )
+            pure { model | addingCard = b }
 
         SetCardsTab ct ->
-            ( { model | cardsTab = ct }, Cmd.none )
+            pure { model | cardsTab = ct }
 
         SetTab tab ->
-            ( { model | tab = tab }, Cmd.none )
+            pure { model | tab = tab }
 
         AddCard ->
             let
@@ -415,10 +411,10 @@ update msg model =
             )
 
         UpdateSide2 str ->
-            ( { model | side2 = str }, Cmd.none )
+            pure { model | side2 = str }
 
         UpdateSide1 str ->
-            ( { model | side1 = format str }, Cmd.none )
+            pure { model | side1 = format str }
 
         NoOp ->
             ( model, Cmd.none )
@@ -444,18 +440,18 @@ format =
 
 updatePracticeQueue : (PracticeQueue Card -> Maybe (PracticeQueue Card)) -> Model -> ( Model, Cmd Msg )
 updatePracticeQueue f model =
-    ( { model
-        | practiceState =
-            model.practiceState
-                |> Maybe.map (\p -> { p | showing = False })
-                |> Maybe.andThen
-                    (\p ->
-                        f p.queue
-                            |> Maybe.map (\q -> { p | queue = q })
-                    )
-      }
-    , Cmd.none
-    )
+    tell (focus testInputId)
+        |> dure
+            { model
+                | practiceState =
+                    model.practiceState
+                        |> Maybe.map (\p -> { p | showing = False })
+                        |> Maybe.andThen
+                            (\p ->
+                                f p.queue
+                                    |> Maybe.map (\q -> { p | queue = q })
+                            )
+            }
 
 
 ifTS : (GlobalTestingState -> ( Model, Cmd Msg )) -> Model -> ( Model, Cmd Msg )
@@ -465,7 +461,7 @@ ifTS f model =
             f ts
 
         Nothing ->
-            ( model, Cmd.none )
+            pure model
 
 
 updateCards : (Array Card -> Array Card) -> Model -> ( Model, Cmd Msg )
