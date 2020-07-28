@@ -4,6 +4,7 @@ import Array exposing (Array)
 import Array.Extra as Array
 import Browser exposing (Document)
 import Browser.Dom as Dom
+import Browser.Events
 import Card exposing (Card)
 import Css as C exposing (Declaration)
 import Css.Global as CG
@@ -55,6 +56,7 @@ type alias Model =
     , testingState : Maybe GlobalTestingState
     , practiceState : Maybe PracticeState
     , testingInput : String
+    , hotkeyMode : Bool
     }
 
 
@@ -112,6 +114,7 @@ init flags =
         , testingState = Nothing
         , practiceState = Nothing
         , testingInput = ""
+        , hotkeyMode = False
         }
 
 
@@ -145,6 +148,7 @@ type Msg
     | Repractice Int
     | Export
     | UpdateTestingInput String
+    | HotkeyModeOff
     | Run (Cmd Msg)
     | NoOp
 
@@ -159,6 +163,9 @@ update msg model =
     case msg of
         Run cmd ->
             ( model, cmd )
+
+        HotkeyModeOff ->
+            pure { model | hotkeyMode = False }
 
         UpdateTestingInput str ->
             pure { model | testingInput = format str }
@@ -187,6 +194,7 @@ update msg model =
                     | practiceState =
                         model.practiceState
                             |> Maybe.map (\p -> { p | showing = True })
+                    , hotkeyMode = True
                 }
 
         FailPractice ->
@@ -232,6 +240,7 @@ update msg model =
                         pure
                             { model
                                 | testingState = Just { ts | showing = True }
+                                , hotkeyMode = True
                             }
                     )
 
@@ -243,6 +252,7 @@ update msg model =
                             partialModel =
                                 { model
                                     | testingInput = ""
+                                    , hotkeyMode = False
                                 }
                         in
                                 (case testingState.left of
@@ -476,6 +486,7 @@ updatePracticeQueue f model =
                                     |> Maybe.map (\q -> { p | queue = q })
                             )
                 , testingInput = ""
+                , hotkeyMode = False
             }
 
 
@@ -503,8 +514,25 @@ updateCards f model =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions _ =
-    Sub.none
+subscriptions model =
+    if model.hotkeyMode then
+        Browser.Events.onKeyDown <|
+            D.map
+                (\key ->
+                    case key of
+                        "p" ->
+                            Run <| click passId
+
+                        "f" ->
+                            Run <| click failId
+
+                        _ ->
+                            NoOp
+                )
+                (D.field "key" D.string)
+
+    else
+        Sub.none
 
 
 
@@ -700,11 +728,18 @@ cardsHtml { pass, fail, show, showing, maybeShowing, testing } =
                 , C.columnGap "3em"
                 ]
                 []
-              <|
-                case maybeShowing of
+                (case maybeShowing of
                     Just _ ->
-                        [ H.button [ E.onClick pass ] [ H.text "Pass" ]
-                        , H.button [ E.onClick fail ] [ H.text "Fail" ]
+                        [ H.button
+                            [ A.id passId
+                            , E.onClick pass
+                            ]
+                            [ H.text "Pass" ]
+                        , H.button
+                            [ A.id failId
+                            , E.onClick fail
+                            ]
+                            [ H.text "Fail" ]
                         ]
 
                     Nothing ->
@@ -714,6 +749,7 @@ cardsHtml { pass, fail, show, showing, maybeShowing, testing } =
                             ]
                             [ H.text "Show" ]
                         ]
+                )
             ]
         , H.divS
             [ C.textAlign "center"
@@ -741,10 +777,21 @@ cardsHtml { pass, fail, show, showing, maybeShowing, testing } =
                                 ( NoOp, False )
                         )
                         (D.field "key" D.string)
+                , E.onFocus HotkeyModeOff
                 ]
                 []
             ]
         ]
+
+
+passId : String
+passId =
+    "pass"
+
+
+failId : String
+failId =
+    "fail"
 
 
 showId : String
