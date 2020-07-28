@@ -512,9 +512,9 @@ header model =
         , C.grid "auto/auto-flow 1fr"
         ]
         []
-        [ H.div [ E.onClick <| SetTab Test ] [ H.text "Test" ]
-        , H.div [ E.onClick <| SetTab Practice ] [ H.text "Practice" ]
-        , H.div [ E.onClick <| SetTab Cards ] [ H.text "Cards" ]
+        [ focusedTab (model.tab == Test) [ E.onClick <| SetTab Test ] [ H.text "Test" ]
+        , focusedTab (model.tab == Practice) [ E.onClick <| SetTab Practice ] [ H.text "Practice" ]
+        , focusedTab (model.tab == Cards) [ E.onClick <| SetTab Cards ] [ H.text "Cards" ]
         , H.buttonS
             [ C.position "absolute"
             , C.top ".5em"
@@ -523,6 +523,16 @@ header model =
             [ E.onClick Export ]
             [ H.text "Export" ]
         ]
+
+
+focusedTab : Bool -> List (Attribute Msg) -> List (Html Msg) -> Html Msg
+focusedTab bool =
+    H.divS <|
+        if bool then
+            [ C.color "red" ]
+
+        else
+            []
 
 
 body : Model -> Html Msg
@@ -725,8 +735,8 @@ cardsTab model =
             , C.gridTemplateColumns "1fr 1fr"
             ]
             []
-            [ H.div [ E.onClick <| SetCardsTab Pending ] [ H.text "Pending" ]
-            , H.div [ E.onClick <| SetCardsTab All ] [ H.text "All" ]
+            [ focusedTab (model.cardsTab == Pending) [ E.onClick <| SetCardsTab Pending ] [ H.text "Pending" ]
+            , focusedTab (model.cardsTab == All) [ E.onClick <| SetCardsTab All ] [ H.text "All" ]
             ]
         , if model.addingCard then
             addingCardHtml model
