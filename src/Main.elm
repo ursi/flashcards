@@ -731,6 +731,7 @@ cardListHtml model =
                                 Just
                                     [ cardInput
                                         [ A.value model.editingSide1
+                                        , A.attribute "spellecheck" "false"
                                         , E.onInput UpdateEditingSide1
                                         ]
                                         []
@@ -779,6 +780,7 @@ addingCardHtml { side1, side2 } =
         [ cardInput
             [ A.id side1Id
             , A.value side1
+            , A.attribute "spellcheck" "false"
             , E.onInput UpdateSide1
             ]
             []
