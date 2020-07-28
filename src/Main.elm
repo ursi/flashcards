@@ -222,6 +222,7 @@ update msg model =
                     |> Random.List.shuffle
                     |> Random.generate ShuffledPracticeCardsReceived
                 )
+                |> dell (focus testInputId)
                 |> dure model
 
         ShowBothSidesTesting ->
