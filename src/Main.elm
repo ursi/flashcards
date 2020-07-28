@@ -712,6 +712,7 @@ cardsHtml { pass, fail, show, showing, maybeShowing, testing } =
             []
             [ cardInput
                 [ A.value testing
+                , A.attribute "spellcheck" "false"
                 , E.onInput UpdateTestingInput
                 ]
                 []
