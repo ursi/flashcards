@@ -728,12 +728,12 @@ cardListHtml model =
                         (\index ->
                             if index == i then
                                 Just
-                                    [ H.textarea
+                                    [ cardInput
                                         [ A.value model.editingSide1
                                         , E.onInput UpdateEditingSide1
                                         ]
                                         []
-                                    , H.textarea
+                                    , cardInput
                                         [ A.value model.editingSide2
                                         , E.onInput UpdateEditingSide2
                                         ]
@@ -763,6 +763,11 @@ cardListHtml model =
             []
 
 
+cardInput : List (Attribute Msg) -> List (Html Msg) -> Html Msg
+cardInput =
+    H.textareaS [ C.fontSize "inherit" ]
+
+
 side1Id =
     "side-1"
 
@@ -770,13 +775,13 @@ side1Id =
 addingCardHtml : { r | side1 : String, side2 : String } -> Html Msg
 addingCardHtml { side1, side2 } =
     H.div []
-        [ H.textarea
+        [ cardInput
             [ A.id side1Id
             , A.value side1
             , E.onInput UpdateSide1
             ]
             []
-        , H.textarea
+        , cardInput
             [ A.value side2
             , E.onInput UpdateSide2
             ]
