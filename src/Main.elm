@@ -232,7 +232,7 @@ update msg model =
                                             partialModel =
                                                 { model | testingState = Nothing }
                                         in
-                                        updateCards partialModel (Card.updateCards passed)
+                                        updateCards (Card.updateCards passed) partialModel
                                 in
                                 if List.isEmpty tail then
                                     if partialTS.side == Side1 then
@@ -314,7 +314,7 @@ update msg model =
         FillTesting ->
             case model.max of
                 Just max ->
-                    updateCards model (Card.fill max)
+                    updateCards (Card.fill max) model
 
                 Nothing ->
                     ( model, Cmd.none )
@@ -330,7 +330,7 @@ update msg model =
             )
 
         RemoveCard i ->
-            updateCards model (Array.removeAt i)
+            updateCards (Array.removeAt i) model
 
         UpdateEditingSide2 str ->
             ( { model | editingSide2 = str }, Cmd.none )
@@ -343,11 +343,13 @@ update msg model =
                 Just i ->
                     let
                         ( partialModel, cmd ) =
-                            updateCards model <|
-                                Card.updateSides
-                                    i
-                                    model.editingSide1
-                                    model.editingSide2
+                            model
+                                |> updateCards
+                                    (Card.updateSides
+                                        i
+                                        model.editingSide1
+                                        model.editingSide2
+                                    )
                     in
                     ( { partialModel | editing = Nothing }, cmd )
 
@@ -444,8 +446,8 @@ ifTS f model =
             ( model, Cmd.none )
 
 
-updateCards : Model -> (Array Card -> Array Card) -> ( Model, Cmd Msg )
-updateCards model f =
+updateCards : (Array Card -> Array Card) -> Model -> ( Model, Cmd Msg )
+updateCards f model =
     let
         newCards =
             f model.cards
