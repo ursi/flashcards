@@ -145,6 +145,7 @@ type Msg
     | Repractice Int
     | Export
     | UpdateTestingInput String
+    | Run (Cmd Msg)
     | NoOp
 
 
@@ -156,6 +157,9 @@ type PassFail
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        Run cmd ->
+            ( model, cmd )
+
         UpdateTestingInput str ->
             pure { model | testingInput = format str }
 
