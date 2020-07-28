@@ -54,6 +54,7 @@ type alias Model =
     , max : Maybe Int
     , testingState : Maybe GlobalTestingState
     , practiceState : Maybe PracticeState
+    , testingInput : String
     }
 
 
@@ -110,6 +111,7 @@ init flags =
                 |> Result.withDefault Nothing
         , testingState = Nothing
         , practiceState = Nothing
+        , testingInput = ""
         }
 
 
@@ -142,6 +144,7 @@ type Msg
     | ShowBothSidesPractice
     | Repractice Int
     | Export
+    | UpdateTestingInput String
     | NoOp
 
 
@@ -153,6 +156,9 @@ type PassFail
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        UpdateTestingInput str ->
+            pure { model | testingInput = format str }
+
         Export ->
             ( model, Download.string "flashcards.json" "application.json" <| En.encode 4 <| En.array Card.encode model.cards )
 
@@ -228,54 +234,59 @@ update msg model =
             model
                 |> ifTS
                     (\testingState ->
-                        case testingState.left of
-                            head :: tail ->
-                                let
-                                    partialTS =
-                                        { testingState
-                                            | passed =
-                                                if passFail == Pass then
-                                                    head :: testingState.passed
-
-                                                else
-                                                    testingState.passed
-                                            , showing = False
-                                        }
-
-                                    updateTestingState ts =
-                                        ( { model | testingState = Just ts }, Cmd.none )
-
-                                    finish =
+                        let
+                            partialModel =
+                                { model
+                                    | testingInput = ""
+                                }
+                        in
+                                (case testingState.left of
+                                    head :: tail ->
                                         let
-                                            passed =
-                                                partialTS.passed
-                                                    |> List.map (Tuple.mapSecond Card.nextState)
+                                            partialTS =
+                                                { testingState
+                                                    | passed =
+                                                        if passFail == Pass then
+                                                            head :: testingState.passed
 
-                                            partialModel =
-                                                { model | testingState = Nothing }
-                                        in
-                                        updateCards (Card.updateCards passed) partialModel
-                                in
-                                if List.isEmpty tail then
-                                    if partialTS.side == Side1 then
-                                        if List.isEmpty partialTS.side2 then
-                                            finish
-
-                                        else
-                                            updateTestingState
-                                                { partialTS
-                                                    | left = partialTS.side2
-                                                    , side = Side2
+                                                        else
+                                                            testingState.passed
+                                                    , showing = False
                                                 }
 
-                                    else
-                                        finish
+                                            updateTestingState ts =
+                                                pure { partialModel | testingState = Just ts }
 
-                                else
-                                    updateTestingState { partialTS | left = tail }
+                                            finish =
+                                                let
+                                                    passed =
+                                                        partialTS.passed
+                                                            |> List.map (Tuple.mapSecond Card.nextState)
+                                                in
+                                                pure { partialModel | testingState = Nothing }
+                                                    |> bind (updateCards (Card.updateCards passed))
+                                        in
+                                        if List.isEmpty tail then
+                                            if partialTS.side == Side1 then
+                                                if List.isEmpty partialTS.side2 then
+                                                    finish
 
-                            [] ->
-                                ( model, Cmd.none )
+                                                else
+                                                    updateTestingState
+                                                        { partialTS
+                                                            | left = partialTS.side2
+                                                            , side = Side2
+                                                        }
+
+                                            else
+                                                finish
+
+                                        else
+                                            updateTestingState { partialTS | left = tail }
+
+                                    [] ->
+                                        pure partialModel
+                                )
                     )
 
         ShuffledTestingCardsReceived ( side1, side2 ) ->
@@ -459,6 +470,7 @@ updatePracticeQueue f model =
                                 f p.queue
                                     |> Maybe.map (\q -> { p | queue = q })
                             )
+                , testingInput = ""
             }
 
 
@@ -559,44 +571,50 @@ practiceTab model =
                 )
                 (F.bool <| model.practiceState == Nothing)
             ]
-        , F.maybe idH
-            practiceCardsHtml
-            model.practiceState
+        , practiceCardsHtml model
         ]
 
 
-practiceCardsHtml : PracticeState -> Html Msg
-practiceCardsHtml { queue, showing } =
-    let
-        card =
-            PracticeQueue.selected queue
+practiceCardsHtml : { r | practiceState : Maybe PracticeState, testingInput : String } -> Html Msg
+practiceCardsHtml { practiceState, testingInput } =
+    practiceState
+        |> F.maybe idH
+            (\ps ->
+                let
+                    { queue, showing } =
+                        ps
 
-        ( ( _, side1 ), ( _, side2 ) ) =
-            card.sides
+                    card =
+                        PracticeQueue.selected queue
 
-        ( primary, secondary ) =
-            case card.state of
-                TS.Side1 _ ->
-                    ( side1, side2 )
+                    ( ( _, side1 ), ( _, side2 ) ) =
+                        card.sides
 
-                TS.Side2 _ ->
-                    ( side2, side1 )
+                    ( primary, secondary ) =
+                        case card.state of
+                            TS.Side1 _ ->
+                                ( side1, side2 )
 
-                _ ->
-                    ( "uh oh, something went wrong", "" )
-    in
-    cardsHtml
-        { pass = PassPractice
-        , fail = FailPractice
-        , show = ShowBothSidesPractice
-        }
-        primary
-        (if showing then
-            Just secondary
+                            TS.Side2 _ ->
+                                ( side2, side1 )
 
-         else
-            Nothing
-        )
+                            _ ->
+                                ( "uh oh, something went wrong", "" )
+                in
+                cardsHtml
+                    { pass = PassPractice
+                    , fail = FailPractice
+                    , show = ShowBothSidesPractice
+                    , showing = primary
+                    , maybeShowing =
+                        if showing then
+                            Just secondary
+
+                        else
+                            Nothing
+                    , testing = testingInput
+                    }
+            )
 
 
 testTab : Model -> Html Msg
@@ -608,46 +626,49 @@ testTab model =
                 (\_ -> preTestingControls model)
                 (F.bool <| model.testingState == Nothing)
             ]
-        , F.maybe idH
-            (\testingState -> testingCardsHtml testingState)
-            model.testingState
+        , testingCardsHtml model
         ]
 
 
-testingCardsHtml : GlobalTestingState -> Html Msg
-testingCardsHtml testingState =
-    case testingState.left of
-        ( _, card ) :: _ ->
-            let
-                ( ( _, side1 ), ( _, side2 ) ) =
-                    card.sides
+testingCardsHtml : { r | testingState : Maybe GlobalTestingState, testingInput : String } -> Html Msg
+testingCardsHtml { testingState, testingInput } =
+    testingState
+        |> F.maybe idH
+            (\{ left, side, showing } ->
+                case left of
+                    ( _, card ) :: _ ->
+                        let
+                            ( ( _, side1 ), ( _, side2 ) ) =
+                                card.sides
 
-                ( primary, secondary ) =
-                    if testingState.side == Side1 then
-                        ( side1, side2 )
+                            ( primary, secondary ) =
+                                if side == Side1 then
+                                    ( side1, side2 )
 
-                    else
-                        ( side2, side1 )
-            in
-            cardsHtml
-                { pass = PassFailTesting Pass
-                , fail = PassFailTesting Fail
-                , show = ShowBothSidesTesting
-                }
-                primary
-                (if testingState.showing then
-                    Just secondary
+                                else
+                                    ( side2, side1 )
+                        in
+                        cardsHtml
+                            { pass = PassFailTesting Pass
+                            , fail = PassFailTesting Fail
+                            , show = ShowBothSidesTesting
+                            , showing = primary
+                            , maybeShowing =
+                                if showing then
+                                    Just secondary
 
-                 else
-                    Nothing
-                )
+                                else
+                                    Nothing
+                            , testing = testingInput
+                            }
 
-        [] ->
-            idH
+                    [] ->
+                        idH
+            )
 
 
-cardsHtml : { pass : Msg, fail : Msg, show : Msg } -> String -> Maybe String -> Html Msg
-cardsHtml { pass, fail, show } alwaysShowing maybeShowing =
+cardsHtml : { pass : Msg, fail : Msg, show : Msg, showing : String, maybeShowing : Maybe String, testing : String } -> Html Msg
+cardsHtml { pass, fail, show, showing, maybeShowing, testing } =
     H.div []
         [ H.divS
             [ C.display "grid"
@@ -657,7 +678,7 @@ cardsHtml { pass, fail, show } alwaysShowing maybeShowing =
             , C.whiteSpace "pre-wrap"
             ]
             []
-            [ H.div [] [ H.text alwaysShowing ]
+            [ H.div [] [ H.text showing ]
             , F.maybe idH
                 (\text -> H.div [] [ H.text text ])
                 maybeShowing
@@ -689,7 +710,12 @@ cardsHtml { pass, fail, show } alwaysShowing maybeShowing =
             , C.marginTop "1em"
             ]
             []
-            [ cardInput [] [] ]
+            [ cardInput
+                [ A.value testing
+                , E.onInput UpdateTestingInput
+                ]
+                []
+            ]
         ]
 
 
