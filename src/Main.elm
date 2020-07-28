@@ -635,15 +635,28 @@ cardsHtml { pass, fail, show } alwaysShowing maybeShowing =
                 (\text -> H.div [] [ H.text text ])
                 maybeShowing
             ]
-        , H.divS [ C.textAlign "center" ] [] <|
-            case maybeShowing of
-                Just _ ->
-                    [ H.button [ E.onClick pass ] [ H.text "Pass" ]
-                    , H.button [ E.onClick fail ] [ H.text "Fail" ]
-                    ]
+        , H.divS
+            [ C.display "grid"
+            , C.justifyItems "center"
+            , C.marginTop "1em"
+            ]
+            []
+            [ H.divS
+                [ C.display "grid"
+                , C.grid "auto/auto-flow max-content"
+                , C.columnGap "3em"
+                ]
+                []
+              <|
+                case maybeShowing of
+                    Just _ ->
+                        [ H.button [ E.onClick pass ] [ H.text "Pass" ]
+                        , H.button [ E.onClick fail ] [ H.text "Fail" ]
+                        ]
 
-                Nothing ->
-                    [ H.button [ E.onClick show ] [ H.text "Show" ] ]
+                    Nothing ->
+                        [ H.button [ E.onClick show ] [ H.text "Show" ] ]
+            ]
         ]
 
 
