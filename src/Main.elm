@@ -385,7 +385,7 @@ update msg model =
             updateCards (Array.removeAt i) model
 
         UpdateEditingSide2 str ->
-            pure { model | editingSide2 = str }
+            pure { model | editingSide2 = format str }
 
         UpdateEditingSide1 str ->
             pure { model | editingSide1 = format str }
@@ -439,7 +439,7 @@ update msg model =
                     }
 
         UpdateSide2 str ->
-            pure { model | side2 = str }
+            pure { model | side2 = format str }
 
         UpdateSide1 str ->
             pure { model | side1 = format str }
