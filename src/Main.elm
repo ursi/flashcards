@@ -929,7 +929,7 @@ cardListHtml model =
                         , H.button [ E.onClick <| StartEditing i side1 side2 ] [ H.text "Edit" ]
                         , H.button [ E.onDoubleClick <| RemoveCard i ] [ H.text "Remove" ]
                         , F.maybe idH
-                            (\_ -> H.button [ E.onClick <| Repractice i ] [ H.text "Practice" ])
+                            (\_ -> H.button [ E.onDoubleClick <| Repractice i ] [ H.text "Practice" ])
                             (F.bool <| card.state == TS.Completed)
                         ]
                 )
