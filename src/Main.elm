@@ -162,8 +162,6 @@ type PassFail
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Run cmd ->
-            ( model, cmd )
         UnloadTesting ->
             model
                 |> updateCards
@@ -465,6 +463,9 @@ update msg model =
 
         UpdateSide1 str ->
             pure { model | side1 = format str }
+
+        Run cmd ->
+            ( model, cmd )
 
         NoOp ->
             pure model
