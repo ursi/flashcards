@@ -149,6 +149,7 @@ type Msg
     | Export
     | UpdateTestingInput String
     | HotkeyModeOff
+    | UnloadTesting
     | Run (Cmd Msg)
     | NoOp
 
@@ -163,6 +164,27 @@ update msg model =
     case msg of
         Run cmd ->
             ( model, cmd )
+        UnloadTesting ->
+            model
+                |> updateCards
+                    (Array.foldl
+                        (\card acc ->
+                            acc
+                                |> Array.push
+                                    (case card.state of
+                                        TS.Side1 n ->
+                                            if n == card.completed + 1 then
+                                                { card | state = TS.Pending }
+
+                                            else
+                                                card
+
+                                        _ ->
+                                            card
+                                    )
+                        )
+                        Array.empty
+                    )
 
         HotkeyModeOff ->
             pure { model | hotkeyMode = False }
@@ -828,6 +850,7 @@ preTestingControls model =
                     []
                 ]
             , H.button [ E.onClick FillTesting ] [ H.text "Fill" ]
+            , H.button [ E.onClick UnloadTesting ] [ H.text "Unload" ]
             ]
         , H.div [] [ H.button [ E.onClick StartTesting ] [ H.text "Start" ] ]
         ]
