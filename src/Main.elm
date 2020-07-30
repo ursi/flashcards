@@ -474,6 +474,7 @@ format =
         >> String.replace "U`" "Ú"
         >> String.replace "U:" "Ü"
         >> String.replace "N~" "Ñ"
+        >> String.replace "??" "¿"
 
 
 updatePracticeQueue : (PracticeQueue Card -> Maybe (PracticeQueue Card)) -> Model -> ( Model, Cmd Msg )
