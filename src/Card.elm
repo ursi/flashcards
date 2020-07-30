@@ -137,7 +137,7 @@ fill max cards =
 
 fillHelper : Int -> Int -> Int -> Array Card -> Array Card
 fillHelper max current index cards =
-    if max == current || index == Array.length cards then
+    if max <= current || index == Array.length cards then
         cards
 
     else
