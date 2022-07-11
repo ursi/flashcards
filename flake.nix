@@ -1,21 +1,44 @@
-{
-  inputs = {
-    elm-install.url = "github:ursi/elm-install";
-    node-packages.url = "github:ursi/nix-node-packages";
-  };
+{ inputs =
+    { dream2nix.url = "github:nix-community/dream2nix";
 
-  outputs = { self, nixpkgs, utils, elm-install, node-packages }:
-    utils.mkShell
-      ({ pkgs, system }: with pkgs;
-        {
-          buildInputs = [
-            elmPackages.elm
-            node-packages.packages.${system}.elm-git-install
-            nodejs
-            nodePackages.parcel-bundler
-            elm-install.defaultPackage.${system}
-          ];
-        }
-      )
-      nixpkgs;
+      elm-git-install =
+        { flake = false;
+          url = "github:robinheghan/elm-git-install";
+        };
+
+      elm-install.url = "github:ursi/elm-install";
+      make-shell.url = "github:ursi/nix-make-shell/1";
+      nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+      utils.url = "github:ursi/flake-utils/8";
+    };
+
+  outputs = { dream2nix, utils, ... }@inputs:
+    utils.apply-systems { inherit inputs; }
+      ({ elm-install, make-shell, pkgs, system, ... }:
+         let
+           d2n =
+             dream2nix.lib.makeFlakeOutputs
+               { systems = [ system ];
+                 config.projectRoot = ./.;
+                 source = inputs.elm-git-install;
+               };
+
+           inherit (d2n.packages.${system}) elm-git-install;
+         in
+         { devShell =
+             make-shell
+               { packages =
+                   with pkgs;
+                   [ elm-git-install
+                     elm-install
+                     elmPackages.elm
+                     gcc
+                     gnumake
+                     nodejs
+                     nodePackages.parcel-bundler
+                     python3
+                   ];
+               };
+         }
+      );
 }
