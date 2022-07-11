@@ -38,6 +38,11 @@
                      nodePackages.parcel-bundler
                      python3
                    ];
+
+                 aliases =
+                   { build = "elm-git-install && npm i";
+                     serve = "parcel serve index.html;";
+                   };
                };
          }
       );
