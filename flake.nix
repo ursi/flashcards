@@ -16,6 +16,8 @@
     utils.apply-systems { inherit inputs; }
       ({ elm-install, make-shell, pkgs, system, ... }:
          let
+           p = pkgs;
+
            d2n =
              dream2nix.lib.makeFlakeOutputs
                { systems = [ system ];
@@ -25,7 +27,16 @@
 
            inherit (d2n.packages.${system}) elm-git-install;
          in
-         { devShell =
+         { apps.default =
+             { type = "app";
+
+               program =
+                 (p.writeShellScript "serve"
+                    "${p.nodePackages.parcel-bundler}/bin/parcel serve index.html"
+                 ).outPath;
+             };
+
+           devShell =
              make-shell
                { packages =
                    with pkgs;
